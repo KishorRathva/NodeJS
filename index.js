@@ -1,29 +1,81 @@
-const Logger = require('./logger');
-const fs = require('fs');
+const http = require('http');
 const path = require('path');
+const fs = require('fs');
 
-const logger = new Logger();
+const server = http.createServer((req,res) => {
+	// if(req.url === '/'){
+	// 	fs.readFile(path.join(__dirname,'public','index.html'),(err,content) =>{
+	// 		if(err) throw err;
+	// 		res.writeHead(200,{'Content-Type':'text/html'})
+	// 	    res.end(content);
+	// 	})
+		
+	// }
+	// if(req.url === '/api/users'){
+	// 	const users = [
+	// 	{name : 'kishor Rathva', age:20},
+	// 	{name : 'nuts',age:20}
+	// 	];
 
-if (!fs.existsSync(path.join(__dirname,'/logs'))) {
-    fs.mkdir(path.join(__dirname,'/logs'),{},err => {
-		if (err) throw err ;
-		console.log('Folder created ..');
-	});
-};
+	// 	res.writeHead(200,{'Content-Type':'application/json'});
+	// 	res.end(JSON.stringify(users));
+	// }
 
+	//Build file path
 
+	let filepath = path.join(__dirname,'public',req.url === '/' ? 'index.html' : req.url);
+	console.log(filepath);
 
-logger.on('message',(data) => {
-	fs.writeFile(path.join(__dirname,'/logs','logs.txt'),'', err => {
-		if (err) throw err ;
-	
-		// File append
-		fs.appendFile(path.join(__dirname,'/logs','logs.txt'),JSON.stringify(data)+'\r\n',err => {
-			if(err) throw err ;
-			console.log('File Written to....');
-		});
-		console.log("successfully loged..");
+	//Extension of file
+
+	let extname = path.extname(filepath);
+	let contentType = 'text/html';
+
+	//Check ext and set Content type
+
+	switch(extname){
+		case '.js':
+			contentType = 'text/javascript';
+			break;
+		case  '.css':
+			contentType = 'text/css';
+			break;
+		case  '.json':
+			contentType = 'application/json';
+			break;
+		case  '.png':
+			contentType = 'image/png';
+			break;
+		case  '.jpg':
+			contentType = 'image/jpg';
+			break;
+
+	}
+
+	//Read File
+
+	fs.readFile(filepath,(err,content) => {
+		if(err){
+			if(err.code == 'ENOENT'){
+				//Page not found
+				fs.readFile(path.join(__dirname,'public','404.html'),(err,content) => {
+					res.writeHead(200, { 'Content-Type': 'text/html'})
+					res.end(content,'utf8');
+				})
+			}else{
+				//Some server  error
+				res.writeHead(500);
+				res.end(`server Error: ${err.code}`);
+			}
+		}else{
+			//success
+			res.writeHead(200 ,{'Content-Type' : contentType});
+			res.end(content,'utf8');
+		}
 	});
 });
-logger.log('hello world',new Date());
-logger.log('hello',new Date());
+
+const PORT = process.env.PORT || 5000;
+
+server.listen(PORT , () => console.log(`server running om port ${PORT}`));
+ 
